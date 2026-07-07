@@ -1,0 +1,199 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deployment &mdash; ceph  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Operations &amp; Maintenance" href="OPERATIONS_MAINTENANCE.html" />
+    <link rel="prev" title="Testing" href="TESTING.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ceph
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="PLANNING.html">Planning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ANALYSIS.html">Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="DESIGN.html">Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="IMPLEMENTATION.html">Implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="TESTING.html">Testing</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Deployment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#implementation-plan">8. Implementation Plan</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="OPERATIONS_MAINTENANCE.html">Operations &amp; Maintenance</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ceph</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Deployment</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/DEPLOYMENT.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="deployment">
+<h1>Deployment<a class="headerlink" href="#deployment" title="Link to this heading"></a></h1>
+<p>Deployment is embedded in <strong>Implementation Plan</strong> and <strong>OpenStack
+Integration</strong>.</p>
+<p>Includes production rollout, validation, and sign-off.</p>
+<section id="implementation-plan">
+<h2>8. Implementation Plan<a class="headerlink" href="#implementation-plan" title="Link to this heading"></a></h2>
+<p><strong>Step 1 - Planning (decide things first)</strong> Before touching any
+hardware, get answers to the open questions - disk sizes for Node 1-3,
+SSD or HDD, whether iSCSI/NAS goes in or out, whether object storage is
+needed. If you skip this, you’ll end up redoing work later.</p>
+<p><strong>Step 2 - Preparation (get hardware ready)</strong></p>
+<ul>
+<li><p>Install OS on all 8 nodes</p></li>
+<li><p>Set up cabling and network switches for all networks, especially the</p>
+<blockquote>
+<div><p>two storage networks</p>
+</div></blockquote>
+</li>
+<li><p>Make sure all nodes can talk to each other, have correct time (NTP),</p>
+<blockquote>
+<div><p>and can be reached by SSH/Ansible</p>
+</div></blockquote>
+</li>
+<li><p>Set OSD disks as plain individual disks, not RAID</p></li>
+</ul>
+<p><strong>Step 3 - Install Ceph first, before OpenStack</strong></p>
+<ol class="arabic simple">
+<li><p>Start Ceph on Node 1 (first MON + MGR)</p></li>
+<li><p>Add Node 2 and Node 3 as MONs - now you have 3, which gives quorum</p></li>
+<li><p>Add all 4 nodes as OSD hosts, add the actual disks</p></li>
+<li><p>Create the pools: volumes, images, vms, backups</p></li>
+<li><p>Check ceph -s says HEALTH_OK before moving on</p></li>
+</ol>
+<p><strong>Step 4 - Install OpenStack, connect it to Ceph</strong></p>
+<ol class="arabic simple" start="6">
+<li><p>Run Kolla-Ansible to deploy OpenStack</p></li>
+<li><p>Copy Ceph’s keys/config into Cinder, Glance, Nova</p></li>
+<li><p>Run kolla-ansible reconfigure so those services actually use Ceph</p></li>
+<li><p>Set up monitoring (Prometheus/Grafana) and logging</p></li>
+</ol>
+<p><strong>Step 5 - Test everything before going live</strong></p>
+<ul>
+<li><p>Basic connectivity checks</p></li>
+<li><p>Create a volume, boot a VM, snapshot it</p></li>
+<li><p>Run benchmarks (fio, rados bench) to get real performance numbers</p></li>
+<li><p>Kill an OSD, kill a node, kill a MON - one at a time - confirm cluster</p>
+<blockquote>
+<div><p>survives</p>
+</div></blockquote>
+</li>
+<li><p>Deliberately try killing two things at once - confirm it does NOT</p>
+<blockquote>
+<div><p>survive (this is expected, and proves the known limitation)</p>
+</div></blockquote>
+</li>
+<li><p>Test backup and restore for real, not just “backup ran successfully”</p></li>
+<li><p>Test live migration between compute nodes</p></li>
+</ul>
+<p><strong>Step 6 - Go live</strong></p>
+<ul>
+<li><p>Only after all tests pass</p></li>
+<li><p>Take a backup first</p></li>
+<li><p>Confirm monitoring/alerts are working</p></li>
+<li><p>Get sign-off that everyone understands the cluster can’t survive two</p>
+<blockquote>
+<div><p>failures at once</p>
+</div></blockquote>
+</li>
+<li><p>Set up initial users, projects, quotas</p></li>
+</ul>
+<p><strong>Step 7 - Have a rollback plan ready</strong></p>
+<ul>
+<li><p>If a Ceph upgrade fails halfway, you can roll back per-daemon</p></li>
+<li><p>If OpenStack’s connection to Ceph breaks, you can reconfigure back</p></li>
+<li><p>If something’s badly wrong before real data exists, just delete and</p>
+<blockquote>
+<div><p>recreate the pools</p>
+</div></blockquote>
+</li>
+<li><p>If it’s after go-live, restore from backup</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="TESTING.html" class="btn btn-neutral float-left" title="Testing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="OPERATIONS_MAINTENANCE.html" class="btn btn-neutral float-right" title="Operations &amp; Maintenance" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Anil and Babu.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,255 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planning &mdash; ceph  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Analysis" href="ANALYSIS.html" />
+    <link rel="prev" title="Ceph on OpenStack Documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ceph
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Planning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#executive-summary">1. Executive Summary</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#methodology">1.1. Methodology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#technology-stack">1.2. Technology Stack</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ANALYSIS.html">Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="DESIGN.html">Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="IMPLEMENTATION.html">Implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="TESTING.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="DEPLOYMENT.html">Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="OPERATIONS_MAINTENANCE.html">Operations &amp; Maintenance</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ceph</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Planning</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/PLANNING.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <p><u><strong>Storage - Ceph on OpenStack</strong></u></p>
+<p>• Total of 8 Nodes, for Multi Controller node setup Out of these 8 nodes</p>
+<p>• 3 Nodes (Controller + Ceph)</p>
+<p>• 1 Node (Dedicated for Ceph)</p>
+<p>• 4 Nodes (Compute Nodes)</p>
+<p>Total Configuration is as follows</p>
+<p>• 4 nodes X 16 X 64</p>
+<p>• 4nodes X 16 X 96 = 4 TB = 6 TB</p>
+<section id="planning">
+<h1>Planning<a class="headerlink" href="#planning" title="Link to this heading"></a></h1>
+<section id="executive-summary">
+<h2>1. Executive Summary<a class="headerlink" href="#executive-summary" title="Link to this heading"></a></h2>
+<p><a class="reference external" href="https://docs.ceph.com/en/latest/start/"><strong><u>CEPH :</u></strong></a></p>
+<p>Ceph is the foundational storage layer for this entire OpenStack
+deployment. Rather than each OpenStack service (Cinder, Glance, Nova,
+Manila) managing its own independent, siloed storage backend, this
+architecture consolidates all persistent and semi-persistent storage
+needs onto a single distributed Ceph cluster running across 4 of the 8
+physical nodes. This is not a peripheral component — it is the layer
+that determines whether the cluster’s core business requirements (high
+availability, no single point of failure, live migration without
+downtime, disaster recovery) are actually achievable, and it should be
+reviewed with that weight in mind.</p>
+<p>Every virtual machine’s boot image, every attached block volume, every
+snapshot, and — if brought into scope - every object stored via
+S3/Swift-compatible access and every shared file-system mount,
+ultimately lives on Ceph. This means Ceph’s design decisions
+(replication factor, failure domain, node count, network segmentation)
+directly bound what the entire OpenStack cluster can promise its users,
+regardless of how well the compute or networking layers are designed.</p>
+<p><strong>Role:</strong> Ceph has no single storage controller or storage node that all
+I/O must pass through. Data is spread (via the CRUSH algorithm) across
+every OSD host in the cluster, so read and write load is naturally
+balanced rather than bottle necked on one appliance. This directly
+serves the business requirement of no single point of failure - a
+requirement that a traditional single-controller SAN or a single NFS
+filer cannot meet without expensive external clustering.</p>
+<p><strong>Why Ceph:</strong> Compared to alternatives such as LVM/local storage,
+dedicated SAN, or ZFS, Ceph provides distributed replication that
+eliminates single points of failure. It scales horizontally by adding
+OSD nodes (or disks) without forklift upgrades and offers the tightest
+native integration with OpenStack deployment tools like Kolla-Ansible,
+aligning with standard reference architectures.</p>
+<p>Integration Points:</p>
+<ul>
+<li><p>RBD for high-performance block storage (Cinder, Glance, Nova).</p></li>
+<li><p>RGW for S3 and Swift-compatible object storage.</p></li>
+<li><p>CephFS for shared filesystem needs (supporting NAS-style access where</p>
+<blockquote>
+<div><p>required).</p>
+</div></blockquote>
+</li>
+<li><p>External iSCSI and NAS gateways for integration with pre-existing</p>
+<blockquote>
+<div><p>enterprise storage systems.</p>
+</div></blockquote>
+</li>
+</ul>
+<p>This cluster consists of 3 Controller + Ceph nodes, 1 dedicated Ceph
+node, and 4 Compute nodes, providing 3x-replicated block, image, and
+object storage with documented tolerance for a single-node failure.</p>
+<section id="methodology">
+<h3>1.1. Methodology<a class="headerlink" href="#methodology" title="Link to this heading"></a></h3>
+<p>a <strong>hybrid</strong> - waterfall-style phased gates for the physical build (you
+can’t skip procurement), IaC/DevOps for everything
+configuration-related, and SRE principles once you’re live. Don’t force
+pure Agile sprints onto hardware delivery, and don’t force pure
+Waterfall onto ongoing operations.</p>
+</section>
+<section id="technology-stack">
+<h3>1.2. Technology Stack<a class="headerlink" href="#technology-stack" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Layer</strong></p></th>
+<th class="head"><p><strong>Choice</strong></p></th>
+<th class="head"><p><strong>Why</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>OS</p></td>
+<td><p>Ubuntu 24.04 LTS or Rocky/RHEL 9.x</p></td>
+<td><p>both have solid cephadm support</p></td>
+</tr>
+<tr class="row-odd"><td><p>Ceph</p></td>
+<td><p><strong>Squid 19.2.x</strong></p></td>
+<td><p>It is an actively maintained stable branch, widely deployed, and receives backports and security fixes.</p></td>
+</tr>
+<tr class="row-even"><td><p>Deployment</p></td>
+<td><p><strong>cephadm</strong></p></td>
+<td><p>Ceph’s own orchestrator — built-in dashboard, container-based, easiest day-2 lifecycle management</p></td>
+</tr>
+<tr class="row-odd"><td><p>OpenStack</p></td>
+<td><p><strong>2026.1 “Gazpacho”</strong> via Kolla-Ansible or OpenStack-Ansible</p></td>
+<td><p>Current release series; both integrate cleanly with external Ceph via RBD</p></td>
+</tr>
+<tr class="row-even"><td><p>Monitoring</p></td>
+<td><p>Prometheus + Grafana + Alertmanager (cephadm-managed)</p></td>
+<td><p>Ships built-in with cephadm, no separate stack to maintain</p></td>
+</tr>
+<tr class="row-odd"><td><p>Logging</p></td>
+<td><p>Loki or ELK/OpenSearch</p></td>
+<td><p>Centralized log aggregation across 8 nodes — don’t rely on SSH-and-grep during an incident</p></td>
+</tr>
+<tr class="row-even"><td><p>Config management / IaC</p></td>
+<td><p>Ansible (+ git)</p></td>
+<td><p>Industry standard for both Ceph and OpenStack node config; text-based, reviewable</p></td>
+</tr>
+<tr class="row-odd"><td><p>Version control</p></td>
+<td><p>Git</p></td>
+<td><p>keep configs, runbooks, and diagrams versioned together</p></td>
+</tr>
+<tr class="row-even"><td><p>Backup</p></td>
+<td><p>RBD snapshots + a real backup target (not just Ceph replication)</p></td>
+<td><p>Replication protects against hardware failure, not accidental deletion or site loss</p></td>
+</tr>
+<tr class="row-odd"><td><p>Benchmarking</p></td>
+<td><p>rados bench, rbd bench, fio (inside test VMs)</p></td>
+<td><p>Standard Ceph-native and application-level benchmarking tools</p></td>
+</tr>
+<tr class="row-even"><td><p>Security</p></td>
+<td><p>CephX (default), dm-crypt at-rest encryption, TLS/msgr2 in transit</p></td>
+<td><p>Built into Ceph, low operational overhead to enable at cluster-creation time</p></td>
+</tr>
+<tr class="row-odd"><td><p>Network</p></td>
+<td><p>25 GbE preferred (10 GbE minimum), separate public/cluster networks, LACP bonding</p></td>
+<td><p>Matches DB-heavy workload’s latency sensitivity</p></td>
+</tr>
+<tr class="row-even"><td><p>Virtualization</p></td>
+<td><p>KVM/QEMU (via Nova)</p></td>
+<td><p>Standard OpenStack hypervisor</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Ceph on OpenStack Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ANALYSIS.html" class="btn btn-neutral float-right" title="Analysis" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Anil and Babu.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
