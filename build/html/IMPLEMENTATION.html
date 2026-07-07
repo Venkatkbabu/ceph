@@ -1,0 +1,305 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Implementation &mdash; ceph  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Testing" href="TESTING.html" />
+    <link rel="prev" title="Design" href="DESIGN.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ceph
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="PLANNING.html">Planning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ANALYSIS.html">Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="DESIGN.html">Design</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Implementation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#openstack-integration">6. OpenStack Integration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#overview">6.1 Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#integration-architecture">6.2 Integration Architecture</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cinder-integration">6.3 Cinder Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#glance-integration">6.4 Glance Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nova-integration">6.5 Nova Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ceph-object-gateway-rgw">6.6 Ceph Object Gateway (RGW)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cephfs-integration">6.7 CephFS Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#enterprise-storage-integration">6.8 Enterprise Storage Integration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#iscsi-gateway">iSCSI Gateway</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nas-services">NAS Services</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#integration-benefits">6.9 Integration Benefits</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="TESTING.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="DEPLOYMENT.html">Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="OPERATIONS_MAINTENANCE.html">Operations &amp; Maintenance</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ceph</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Implementation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/IMPLEMENTATION.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="implementation">
+<h1>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h1>
+<section id="openstack-integration">
+<h2>6. OpenStack Integration<a class="headerlink" href="#openstack-integration" title="Link to this heading"></a></h2>
+<section id="overview">
+<h3>6.1 Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h3>
+<p>The Ceph cluster serves as the primary storage backend for the OpenStack
+environment, providing a centralized and highly available storage
+platform for multiple OpenStack services. By integrating Ceph with
+OpenStack, storage resources can be shared across all compute and
+controller nodes while eliminating the need for dedicated storage
+appliances.</p>
+<p>The integration is designed to support block storage, image storage,
+virtual machine disks, object storage, and enterprise storage services
+from a single distributed storage platform.</p>
+</section>
+<section id="integration-architecture">
+<h3>6.2 Integration Architecture<a class="headerlink" href="#integration-architecture" title="Link to this heading"></a></h3>
+<p>The proposed integration enables the following OpenStack services to
+communicate directly with the Ceph cluster.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>OpenStack Service</strong></p></th>
+<th class="head"><p><strong>Ceph Service</strong></p></th>
+<th class="head"><p><strong>Purpose</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Cinder</strong></p></td>
+<td><p>RBD</p></td>
+<td><p>Provides persistent block storage volumes for virtual machines.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Glance</strong></p></td>
+<td><p>RBD</p></td>
+<td><p>Stores virtual machine images and templates centrally in the Ceph cluster</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Nova</strong></p></td>
+<td><p>RBD</p></td>
+<td><p>Provides backend storage for ephemeral instance disks (when RBD ephemeral is enabled)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>CephFS (Optional)</strong></p></td>
+<td><p>CephFS</p></td>
+<td><p>Provides shared file storage for applications requiring a distributed file system.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>RGW (Optional)</strong></p></td>
+<td><p>Object Gateway</p></td>
+<td><p>Provides S3 and Swift compatible object storage services.</p></td>
+</tr>
+</tbody>
+</table>
+<p>This integration allows all OpenStack services to utilize the same
+distributed storage infrastructure while maintaining high availability
+and simplified storage management.</p>
+</section>
+<section id="cinder-integration">
+<h3>6.3 Cinder Integration<a class="headerlink" href="#cinder-integration" title="Link to this heading"></a></h3>
+<p>OpenStack Cinder uses <a class="reference external" href="https://docs.ceph.com/en/latest/rbd/">Ceph RADOS Block Device (RBD)</a> as its storage
+backend for creating and managing persistent block volumes.</p>
+<p>Key design considerations include:</p>
+<ul class="simple">
+<li><p>Centralized block storage management.</p></li>
+<li><p>Thin-provisioned RBD volumes.</p></li>
+<li><p>Snapshot and clone support.</p></li>
+<li><p>High availability through Ceph replication.</p></li>
+<li><p>Dynamic volume provisioning.</p></li>
+</ul>
+<p>Cinder volumes are stored in the volumes pool within the Ceph cluster.</p>
+</section>
+<section id="glance-integration">
+<h3>6.4 Glance Integration<a class="headerlink" href="#glance-integration" title="Link to this heading"></a></h3>
+<p>The OpenStack Image Service (Glance) stores virtual machine images
+directly within the Ceph cluster using RBD.</p>
+<p>Advantages of storing images in Ceph include:</p>
+<ul class="simple">
+<li><p>Centralized image repository.</p></li>
+<li><p>High availability through replication.</p></li>
+<li><p>Faster image distribution across compute nodes.</p></li>
+<li><p>Support for image snapshots and cloning.</p></li>
+</ul>
+<p>Images are stored within the <strong>images</strong> pool.</p>
+</section>
+<section id="nova-integration">
+<h3>6.5 Nova Integration<a class="headerlink" href="#nova-integration" title="Link to this heading"></a></h3>
+<p>Nova Compute nodes access virtual machine disks directly from the Ceph
+cluster using the RBD client.</p>
+<p>This architecture provides:</p>
+<ul class="simple">
+<li><p>Shared storage across all compute nodes.</p></li>
+<li><p>Simplified live migration.</p></li>
+<li><p>Reduced dependence on local storage.</p></li>
+<li><p>High availability for virtual machine disks.</p></li>
+</ul>
+<p>When enabled, Nova stores ephemeral instance disks within the <strong>vms</strong>
+pool.</p>
+</section>
+<section id="ceph-object-gateway-rgw">
+<h3>6.6 <a class="reference external" href="https://docs.ceph.com/en/latest/radosgw/">Ceph Object Gateway (RGW)</a><a class="headerlink" href="#ceph-object-gateway-rgw" title="Link to this heading"></a></h3>
+<p>The Ceph Object Gateway provides object storage services compatible with
+both Amazon S3 and OpenStack Swift APIs.</p>
+<p>The RGW service can be used for:</p>
+<ul class="simple">
+<li><p>Application object storage.</p></li>
+<li><p>Backup repositories.</p></li>
+<li><p>Cloud-native applications.</p></li>
+<li><p>Static content storage.</p></li>
+<li><p>Enterprise object storage requirements.</p></li>
+</ul>
+<p>Object data is stored within the <strong>.rgw.*</strong> pools.</p>
+</section>
+<section id="cephfs-integration">
+<h3>6.7 <a class="reference external" href="https://docs.ceph.com/en/latest/cephfs/">CephFS</a> Integration<a class="headerlink" href="#cephfs-integration" title="Link to this heading"></a></h3>
+<p>CephFS provides a distributed POSIX-compliant file system that can be
+shared across multiple clients simultaneously.</p>
+<p>Potential use cases include:</p>
+<ul class="simple">
+<li><p>Shared application storage.</p></li>
+<li><p>User home directories.</p></li>
+<li><p>Container persistent storage.</p></li>
+<li><p>Enterprise NAS services.</p></li>
+</ul>
+<p>If required, CephFS can also be exported through NFS to provide
+traditional NAS functionality.</p>
+</section>
+<section id="enterprise-storage-integration">
+<h3>6.8 Enterprise Storage Integration<a class="headerlink" href="#enterprise-storage-integration" title="Link to this heading"></a></h3>
+<p>To support existing enterprise infrastructure, the proposed design
+includes dedicated storage networks for external storage access.</p>
+<section id="iscsi-gateway">
+<h4>iSCSI Gateway<a class="headerlink" href="#iscsi-gateway" title="Link to this heading"></a></h4>
+<p>The Ceph iSCSI Gateway provides block storage access for systems that
+require the iSCSI protocol.</p>
+<p>Benefits include:</p>
+<ul class="simple">
+<li><p>Enterprise SAN integration.</p></li>
+<li><p>Centralized storage management.</p></li>
+<li><p>High availability.</p></li>
+<li><p>Support for legacy applications.</p></li>
+</ul>
+</section>
+<section id="nas-services">
+<h4>NAS Services<a class="headerlink" href="#nas-services" title="Link to this heading"></a></h4>
+<p>NAS functionality is provided using CephFS combined with NFS services.</p>
+<p>This enables:</p>
+<ul class="simple">
+<li><p>Shared folders.</p></li>
+<li><p>File-level access.</p></li>
+<li><p>Multi-user file sharing.</p></li>
+<li><p>Enterprise application storage.</p></li>
+</ul>
+<p>Dedicated networks are allocated for both iSCSI and NAS traffic to
+isolate enterprise storage workloads from OpenStack client traffic.</p>
+</section>
+</section>
+<section id="integration-benefits">
+<h3>6.9 Integration Benefits<a class="headerlink" href="#integration-benefits" title="Link to this heading"></a></h3>
+<p>Integrating Ceph with OpenStack provides several operational advantages:</p>
+<ul>
+<li><p>Unified storage platform for multiple OpenStack services.</p></li>
+<li><p>High availability through distributed storage and three-way</p>
+<blockquote>
+<div><p>replication.</p>
+</div></blockquote>
+</li>
+<li><p>Simplified storage administration.</p></li>
+<li><p>Scalable architecture supporting future growth.</p></li>
+<li><p>Improved resource utilization.</p></li>
+<li><p>Seamless expansion by adding storage nodes or disks without disrupting</p>
+<blockquote>
+<div><p>running services.</p>
+</div></blockquote>
+</li>
+</ul>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="DESIGN.html" class="btn btn-neutral float-left" title="Design" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="TESTING.html" class="btn btn-neutral float-right" title="Testing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Anil and Babu.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,363 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Testing &mdash; ceph  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Deployment" href="DEPLOYMENT.html" />
+    <link rel="prev" title="Implementation" href="IMPLEMENTATION.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ceph
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="PLANNING.html">Planning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ANALYSIS.html">Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="DESIGN.html">Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="IMPLEMENTATION.html">Implementation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Testing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#high-availability-resilience">7. High Availability &amp; Resilience</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#design-overview">7.1 Design Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#failure-scenario-matrix">7.2 Failure Scenario Matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#replication-and-data-protection">7.3 Replication and Data Protection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backup-strategy">7.4 Backup Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#high-availability-testing-plan">7.5 High Availability Testing Plan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#multi-site-disaster-recovery-extensions-future-scope">7.6 Multi-Site &amp; Disaster Recovery Extensions (Future Scope)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#rbd-mirroring">7.6.1 RBD Mirroring</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cephfs-mirroring">7.6.2 CephFS Mirroring</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#rgw-multisite-geo-replication">7.6.3 RGW Multisite (Geo-Replication)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backup-strategy-recommendation">7.6.4 Backup Strategy Recommendation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="DEPLOYMENT.html">Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="OPERATIONS_MAINTENANCE.html">Operations &amp; Maintenance</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ceph</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Testing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/TESTING.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="testing">
+<h1>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h1>
+<section id="high-availability-resilience">
+<h2>7. High Availability &amp; Resilience<a class="headerlink" href="#high-availability-resilience" title="Link to this heading"></a></h2>
+<section id="design-overview">
+<h3>7.1 Design Overview<a class="headerlink" href="#design-overview" title="Link to this heading"></a></h3>
+<p>This section documents the failure scenarios the cluster is designed to
+tolerate, the mechanisms providing that tolerance, and the failure
+scenarios it does not tolerate given the current 8-node topology. Both
+are presented together deliberately, so the document’s HA claims are
+bounded and testable rather than open-ended.</p>
+</section>
+<section id="failure-scenario-matrix">
+<h3>7.2 Failure Scenario Matrix<a class="headerlink" href="#failure-scenario-matrix" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Failure Scenario</strong></p></th>
+<th class="head"><p><strong>Detection Method</strong></p></th>
+<th class="head"><p><strong>Cluster Response</strong></p></th>
+<th class="head"><p><strong>Outcome</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Single OSD (Disk) Failure</strong></p></td>
+<td><p>Ceph marks OSD <strong>down</strong> after heartbeat timeout</p></td>
+<td><p>Affected PGs re-replicated from surviving copies on other hosts</p></td>
+<td><p>HEALTH_WARN → self-heals to HEALTH_OK; no data loss</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Single Ceph Storage Node Failure (Node 1, Node 2, Node 3, or Node 4)</strong></p></td>
+<td><p>MON detects host unreachable; all OSDs on that host marked <strong>down</strong></p></td>
+<td><p>CRUSH redistributes affected PGs across remaining 3 hosts</p></td>
+<td><p>Tolerated — no data loss, per host-level CRUSH failure domain</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Single Monitor (MON) Failure</strong></p></td>
+<td><p>Remaining MONs detect quorum member loss</p></td>
+<td><p>Cluster continues with 2 of 3 MONs</p></td>
+<td><p>Tolerated — quorum maintained; 3rd MON must be restored before risking a 2nd failure</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Active Manager (MGR) Failure</strong></p></td>
+<td><p>Standby detects active MGR lease expiry</p></td>
+<td><p>Standby promotes to active automatically</p></td>
+<td><p>Tolerated — brief metrics/dashboard gap only, no I/O impact</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>RabbitMQ Node Failure</strong></p></td>
+<td><p>Cluster membership monitoring</p></td>
+<td><p>Remaining nodes continue serving RPC</p></td>
+<td><p>Tolerated</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Galera Database Node Failure</strong></p></td>
+<td><p>Galera cluster membership monitoring</p></td>
+<td><p>Remaining nodes continue serving reads/writes</p></td>
+<td><p>Tolerated, provided quorum (2 of 3) maintained</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Second Concurrent Ceph Storage Node Failure</strong></p></td>
+<td><p>The cluster detects that multiple storage nodes have become unavailable while recovery from a previous failure is still in progress.</p></td>
+<td><p>Ceph cannot maintain the configured replication policy because the remaining number of storage nodes is insufficient for valid three-way replica placement.</p></td>
+<td><p>Not tolerated — only 1 host of margin exists beyond the minimum required for valid replica placement at 4 hosts/3x replication</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Planned Maintenance During an Existing Node Failure</strong></p></td>
+<td><p>A storage node is intentionally placed into maintenance mode while another storage node is already unavailable.</p></td>
+<td><p>The cluster attempts to rebalance data; however, the available storage nodes are insufficient to maintain the required replication level.</p></td>
+<td><p>Not tolerated — same root constraint; taking a node offline for maintenance consumes the same margin an unplanned failure would need</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="replication-and-data-protection">
+<h3>7.3 Replication and Data Protection<a class="headerlink" href="#replication-and-data-protection" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mechanism</strong></p></th>
+<th class="head"><p><strong>Configuration</strong></p></th>
+<th class="head"><p><strong>Protects Against</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Synchronous 3× Replicatio</strong>n</p></td>
+<td><p>size = 3, min_size = 2</p></td>
+<td><p>Disk failure, host failure, silent single-copy corruption</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Host-level CRUSH Failure Domain</strong></p></td>
+<td><p>4-host topology</p></td>
+<td><p>Replica co-location on the same physical host</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>RBD Snapshots</strong></p></td>
+<td><p>Point-in-time, copy-on-write</p></td>
+<td><p>Logical errors, accidental changes — not a substitute for backup</p></td>
+</tr>
+</tbody>
+</table>
+<p>Replication protects against hardware failure. It does not protect
+against accidental deletion or logical corruption, since those changes
+replicate just as faithfully as legitimate writes — this is why backup
+is treated as a separate requirement below.</p>
+</section>
+<section id="backup-strategy">
+<h3>7.4 Backup Strategy<a class="headerlink" href="#backup-strategy" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Requirement</strong></p></th>
+<th class="head"><p><strong>Design</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Independent Failure Domain from Primary Pools</strong></p></td>
+<td><p>A dedicated <strong>backups</strong> pool is used separately from the <strong>volumes</strong> and <strong>images</strong> pools to logically isolate backup data from primary production workloads.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Backup Method</strong></p></td>
+<td><p>OpenStack <strong>Cinder</strong> <strong>Backup</strong> service is used to create and manage backups of persistent block volumes stored within the Ceph cluster.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Recovery Point Objective (RPO)</strong></p></td>
+<td><p><strong>Not yet specified</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Recovery Time Objective (RTO)</strong></p></td>
+<td><p><strong>Not yet specified</strong></p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Open item:</strong> the backups pool currently resides in the same 4-host
+cluster as primary data. This protects against accidental deletion or
+logical error, but not against a full-cluster/site-level event. Whether
+site-level disaster recovery is a requirement - and therefore whether an
+off-cluster or second-site backup target is needed - should be confirmed
+with stakeholders.</p>
+</section>
+<section id="high-availability-testing-plan">
+<h3>7.5 High Availability Testing Plan<a class="headerlink" href="#high-availability-testing-plan" title="Link to this heading"></a></h3>
+<ol class="arabic">
+<li><p>Simulate single OSD failure - confirm recovery, HEALTH_OK</p>
+<blockquote>
+<div><p>restoration, no client I/O errors.</p>
+</div></blockquote>
+</li>
+<li><p>Simulate single OSD host failure - confirm rebalancing, confirm</p>
+<blockquote>
+<div><p>Cinder/Glance/Nova continuity.</p>
+</div></blockquote>
+</li>
+<li><p>Simulate single MON failure - confirm quorum maintained with 2 of 3.</p></li>
+<li><p>Simulate active MGR failure - confirm standby promotion.</p></li>
+<li><p>Simulate RabbitMQ and Galera node failures independently - confirm</p>
+<blockquote>
+<div><p>OpenStack API availability.</p>
+</div></blockquote>
+</li>
+<li><p>Attempt a second concurrent failure during Test 2’s recovery</p>
+<blockquote>
+<div><p>window - expected to demonstrate the documented limitation; run
+deliberately so it is evidenced, not just asserted.</p>
+</div></blockquote>
+</li>
+<li><p>Perform a full backup-and-restore cycle - validate actual recovery,</p>
+<blockquote>
+<div><p>not just backup job completion.</p>
+</div></blockquote>
+</li>
+</ol>
+</section>
+<section id="multi-site-disaster-recovery-extensions-future-scope">
+<h3>7.6 Multi-Site &amp; Disaster Recovery Extensions (Future Scope)<a class="headerlink" href="#multi-site-disaster-recovery-extensions-future-scope" title="Link to this heading"></a></h3>
+<section id="rbd-mirroring">
+<h4>7.6.1 RBD Mirroring<a class="headerlink" href="#rbd-mirroring" title="Link to this heading"></a></h4>
+<p>RBD mirroring enables asynchronous replication of RBD images between two
+Ceph clusters (primary and secondary site).</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Disaster Recovery for critical Cinder volumes.</p></li>
+<li><p>Cross-site data protection.</p></li>
+</ul>
+<p><strong>Recommendation</strong>: RBD mirroring should be considered for production
+workloads that require Recovery Point Objective (RPO) of minutes to
+hours. It is enabled per-pool or per-image and supports both
+journal-based and snapshot-based mirroring.</p>
+</section>
+<section id="cephfs-mirroring">
+<h4>7.6.2 CephFS Mirroring<a class="headerlink" href="#cephfs-mirroring" title="Link to this heading"></a></h4>
+<p>CephFS supports mirroring between two clusters for shared file system
+disaster recovery.</p>
+<p><strong>Recommendation</strong>: If CephFS is used (via Manila or direct NFS), CephFS
+mirroring should be enabled for critical file shares.</p>
+</section>
+<section id="rgw-multisite-geo-replication">
+<h4>7.6.3 RGW Multisite (Geo-Replication)<a class="headerlink" href="#rgw-multisite-geo-replication" title="Link to this heading"></a></h4>
+<p>RGW supports active-active multisite replication for object storage.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Global object storage with low-latency access.</p></li>
+<li><p>Disaster recovery for S3/Swift data.</p></li>
+</ul>
+<p><strong>Recommendation</strong>: RGW multisite should be implemented if object
+storage (RGW) is in scope and geo-redundancy is required.</p>
+</section>
+<section id="backup-strategy-recommendation">
+<h4>7.6.4 Backup Strategy Recommendation<a class="headerlink" href="#backup-strategy-recommendation" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Protection Method</strong></p></th>
+<th class="head"><p><strong>Protects Against</strong></p></th>
+<th class="head"><p><strong>Recommended For</strong></p></th>
+<th class="head"><p><strong>Best Practice</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>3x Replication</p></td>
+<td><p>Hardware /node failure</p></td>
+<td><p>All data</p></td>
+<td><p>Always enabled</p></td>
+</tr>
+<tr class="row-odd"><td><p>RBD Snapshots</p></td>
+<td><p>Accidental deletion, logical errors</p></td>
+<td><p>Critical volumes &amp; images</p></td>
+<td><p>Daily/Weekly</p></td>
+</tr>
+<tr class="row-even"><td><p>External Backup</p></td>
+<td><p>Full cluster / site failure</p></td>
+<td><p>Production data</p></td>
+<td><p>Weekly + offsite</p></td>
+</tr>
+<tr class="row-odd"><td><p>RBD Mirroring</p></td>
+<td><p>Site-level disaster</p></td>
+<td><p>Business-critical workloads</p></td>
+<td><p>If DR required</p></td>
+</tr>
+<tr class="row-even"><td><p>RGW Multisite</p></td>
+<td><p>Site-level disaster (object data)</p></td>
+<td><p>Object storage</p></td>
+<td><p>If RGW in scope</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="IMPLEMENTATION.html" class="btn btn-neutral float-left" title="Implementation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="DEPLOYMENT.html" class="btn btn-neutral float-right" title="Deployment" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Anil and Babu.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,685 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design &mdash; ceph  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Implementation" href="IMPLEMENTATION.html" />
+    <link rel="prev" title="Analysis" href="ANALYSIS.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ceph
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="PLANNING.html">Planning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ANALYSIS.html">Analysis</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#hardware-node-configuration">3. Hardware &amp; Node Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#overall-cluster-architecture-summary">3.1 Overall Cluster Architecture Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#detailed-ceph-storage-node-configuration-primary-focus">3.2 Detailed Ceph Storage Node Configuration (Primary Focus)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compute-nodes-nodes-58">3.3 Compute Nodes (Nodes 5–8)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ceph-osd-layout-and-storage-best-practices">3.4 Ceph OSD Layout and Storage Best Practices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#network-integration-for-ceph-storage">3.5 Network Integration for Ceph Storage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#network-architecture">4. Network Architecture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ceph-network-design-principles">4.1 Ceph Network Design Principles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#complete-list-of-networks">4.2 Complete List of Networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#primary-networks-for-ceph-storage">4.3 Primary Networks for Ceph Storage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#technical-configuration-specifications">4.4 Technical Configuration Specifications</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#network-topology-and-traffic-flows">4.5 Network Topology and Traffic Flows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#implementation-and-validation-considerations">4.6 Implementation and Validation Considerations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ceph-cluster-design">5. Ceph Cluster Design</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#design-overview">5.1 Design Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#daemon-placement">5.2 Daemon Placement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#crush-map">5.3 CRUSH Map</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#failure-domain">5.3.1 Failure Domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#rack-awareness">5.3.2 Rack Awareness</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#custom-crush-rules">5.3.3 Custom CRUSH Rules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pool-design">5.4 Pool Design</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cephadm-deployment-orchestration-tool">5.5 Cephadm — Deployment &amp; Orchestration Tool</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="IMPLEMENTATION.html">Implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="TESTING.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="DEPLOYMENT.html">Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="OPERATIONS_MAINTENANCE.html">Operations &amp; Maintenance</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ceph</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Design</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/DESIGN.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="design">
+<h1>Design<a class="headerlink" href="#design" title="Link to this heading"></a></h1>
+<p><img alt="Ceph Cluster Architecture" src="_images/image1.png" /></p>
+<section id="hardware-node-configuration">
+<h2>3. Hardware &amp; Node Configuration<a class="headerlink" href="#hardware-node-configuration" title="Link to this heading"></a></h2>
+<p>This section provides a comprehensive and detailed description of the
+hardware specifications, node roles, and configuration strategy for the
+new 8-node OpenStack cluster. Particular emphasis is placed on the Ceph
+storage subsystem, which forms the foundational storage layer for the
+entire cloud environment. The design decisions in this section directly
+influence the performance, availability, scalability, and reliability of
+all storage-related operations across Cinder, Glance, Nova, and external
+integration’s.</p>
+<section id="overall-cluster-architecture-summary">
+<h3>3.1 Overall Cluster Architecture Summary<a class="headerlink" href="#overall-cluster-architecture-summary" title="Link to this heading"></a></h3>
+<p>The OpenStack cluster consists of <strong>8 physical nodes</strong> configured in a
+multi-controller high-availability setup. The nodes are divided into
+three distinct role categories to balance control plane functions,
+storage capacity, and compute power:</p>
+<ul class="simple">
+<li><p><strong>3 Nodes</strong>: Controller + Ceph (hyper-converged roles)</p></li>
+<li><p><strong>1 Node</strong>: Dedicated Ceph storage node</p></li>
+<li><p><strong>4 Nodes</strong>: Pure Compute nodes</p></li>
+</ul>
+<p>This distribution allows us to achieve Ceph quorum and redundancy with 4
+storage-capable nodes while maintaining operational efficiency within
+the constrained 8-node footprint.</p>
+<p><strong>Hardware Configuration Overview</strong> (as per project specification):</p>
+<ul>
+<li><p><span class="mark">4 nodes with 16 cores and 64 GB RAM (primarily used</p>
+<blockquote>
+<div><p>for Controller + Ceph roles)</span></p>
+</div></blockquote>
+</li>
+<li><p><span class="mark">4 nodes with 16 cores and 96 GB RAM (primarily used</p>
+<blockquote>
+<div><p>for Compute roles)</span></p>
+</div></blockquote>
+</li>
+</ul>
+<p><span class="mark">This results in a total of <strong>128 CPU cores</strong> and
+<strong>640 GB RAM</strong> across the cluster. The storage design is built around
+the 4 Ceph nodes, which will host all OSD daemons and provide the
+distributed, replicated storage backend.</span></p>
+</section>
+<section id="detailed-ceph-storage-node-configuration-primary-focus">
+<h3>3.2 Detailed Ceph Storage Node Configuration (Primary Focus)<a class="headerlink" href="#detailed-ceph-storage-node-configuration-primary-focus" title="Link to this heading"></a></h3>
+<p>The Ceph storage layer is the most critical component of this
+deployment. All persistent data (block volumes, images, snapshots, and
+objects) will reside on these 4 nodes. Therefore, careful hardware
+planning is essential.</p>
+<blockquote>
+<div><p><strong>3.2.1 Controller + Ceph Nodes (Nodes 1, 2, and 3)</strong></p>
+</div></blockquote>
+<p>These three nodes run both OpenStack control plane services and Ceph
+storage daemons simultaneously. This hyper-converged approach optimizes
+hardware utilization but requires careful resource management.</p>
+<ul>
+<li><p><strong>CPU</strong>: 16 cores per node. These cores must support control plane</p>
+<blockquote>
+<div><p>workloads (Nova API, Neutron, Keystone, Cinder, Galera, RabbitMQ,
+etc.) as well as Ceph OSD processing, replication, and recovery
+operations.</p>
+</div></blockquote>
+</li>
+<li><p><strong>RAM</strong>: 64 GB per node. This memory must be shared between OpenStack</p>
+<blockquote>
+<div><p>services and Ceph BlueStore metadata caching. OSD RAM consumption
+(typically 2–4 GB per OSD) must be closely monitored.</p>
+</div></blockquote>
+</li>
+<li><p><strong>OS Boot Disk</strong>: Recommended 500 GB enterprise SSD in RAID1</p>
+<blockquote>
+<div><p>configuration for maximum reliability. This disk hosts the operating
+system, container images, logs, and Ceph configuration files.</p>
+</div></blockquote>
+</li>
+<li><p><strong>OSD Disks</strong>: To be finalized based on procurement. Each node should</p>
+<blockquote>
+<div><p>host multiple OSDs to contribute meaningfully to the cluster’s
+capacity and performance.</p>
+</div></blockquote>
+</li>
+<li><p><strong>Networking</strong>: Each node must have multiple high-speed Network</p>
+<blockquote>
+<div><p>Interface Cards (NICs) with bonding support. Connectivity to both
+<strong>Storage Public Network</strong> and <strong>Storage Cluster Network</strong> is
+mandatory.</p>
+</div></blockquote>
+</li>
+</ul>
+<blockquote>
+<div><p><strong>3.2.2 Dedicated Ceph Node (Node 4)</strong></p>
+</div></blockquote>
+<p>This node is purpose-built to provide additional storage capacity and
+help balance data distribution across the Ceph cluster.</p>
+<ul>
+<li><p><strong>CPU</strong>: 16 cores.</p></li>
+<li><p><span class="mark"><strong>RAM</strong>: 64 GB (aligned with other Ceph</p>
+<blockquote>
+<div><p>nodes).</span></p>
+</div></blockquote>
+</li>
+<li><p><strong>OS Boot Disk</strong>: Dedicated SSD recommended, kept completely separate</p>
+<blockquote>
+<div><p>from OSD storage to avoid any performance interference.</p>
+</div></blockquote>
+</li>
+<li><p><strong>OSD Disks</strong>: Expected to carry the largest storage allocation among</p>
+<blockquote>
+<div><p>the four Ceph nodes (reference to previous 8 TB planning). This node
+should be equipped with the highest number of disks to act as a
+capacity anchor.</p>
+</div></blockquote>
+</li>
+<li><p><strong>Networking</strong>: Same high-bandwidth, redundant connectivity as the</p>
+<blockquote>
+<div><p>other Ceph nodes, with emphasis on Storage Cluster Network
+performance.</p>
+</div></blockquote>
+</li>
+</ul>
+</section>
+<section id="compute-nodes-nodes-58">
+<h3>3.3 Compute Nodes (Nodes 5–8)<a class="headerlink" href="#compute-nodes-nodes-58" title="Link to this heading"></a></h3>
+<p>These four nodes are dedicated to running virtual machine workloads:</p>
+<ul>
+<li><p><strong>CPU</strong>: 16 cores per node.</p></li>
+<li><p><strong>RAM</strong>: 96 GB per node (higher allocation to support guest VM memory</p>
+<blockquote>
+<div><p>requirements).</p>
+</div></blockquote>
+</li>
+<li><p><strong>Local Disk</strong>: 2 TB SSD for hypervisor OS and optional local</p>
+<blockquote>
+<div><p>ephemeral storage.</p>
+</div></blockquote>
+</li>
+<li><p><strong>Ceph Role</strong>: Act purely as Ceph clients (RBD consumers). They do not</p>
+<blockquote>
+<div><p>run any Ceph daemons.</p>
+</div></blockquote>
+</li>
+</ul>
+</section>
+<section id="ceph-osd-layout-and-storage-best-practices">
+<h3>3.4 Ceph OSD Layout and Storage Best Practices<a class="headerlink" href="#ceph-osd-layout-and-storage-best-practices" title="Link to this heading"></a></h3>
+<p>Since Ceph is the primary storage system, the following design
+principles are strictly recommended:</p>
+<ul>
+<li><p>One OSD daemon per physical disk (best practice for stability and</p>
+<blockquote>
+<div><p>performance).</p>
+</div></blockquote>
+</li>
+<li><p>Use of <strong>BlueStore</strong> as the OSD backend (modern default with excellent</p>
+<blockquote>
+<div><p>performance characteristics).</p>
+</div></blockquote>
+</li>
+<li><p>Separation of WAL/DB volumes on fast media (NVMe or SSD) when using</p>
+<blockquote>
+<div><p>HDDs for main capacity.</p>
+</div></blockquote>
+</li>
+<li><p>All Ceph nodes must have dedicated OS boot disks - sharing OS and OSD</p>
+<blockquote>
+<div><p>storage on the same drives is strongly discouraged.</p>
+</div></blockquote>
+</li>
+<li><p>Preference for a mixed disk strategy (SSD/NVMe for high-performance</p>
+<blockquote>
+<div><p>pools and HDDs for capacity pools) once final hardware
+specifications are received.</p>
+</div></blockquote>
+</li>
+</ul>
+</section>
+<section id="network-integration-for-ceph-storage">
+<h3>3.5 Network Integration for Ceph Storage<a class="headerlink" href="#network-integration-for-ceph-storage" title="Link to this heading"></a></h3>
+<p>Ceph traffic will utilize multiple networks from the defined
+architecture:</p>
+<ul>
+<li><p><strong>Storage Public Network</strong>: Used for all client communication</p>
+<blockquote>
+<div><p>(OpenStack services to Ceph).</p>
+</div></blockquote>
+</li>
+<li><p><strong>Storage Cluster Network</strong>: Dedicated for OSD-to-OSD replication,</p>
+<blockquote>
+<div><p>recovery, and heartbeats (high bandwidth and low latency critical).</p>
+</div></blockquote>
+</li>
+<li><p><strong>Enterprise External Storage Network (iSCSI)</strong>: For iSCSI gateway</p>
+<blockquote>
+<div><p>traffic.</p>
+</div></blockquote>
+</li>
+<li><p><strong>Enterprise External Storage Network (NAS)</strong>: For CephFS and NFS</p>
+<blockquote>
+<div><p>access.</p>
+</div></blockquote>
+</li>
+</ul>
+<p>All Ceph nodes require redundant, bonded high-speed interfaces on these
+storage networks to ensure performance and fault tolerance.</p>
+</section>
+</section>
+<section id="network-architecture">
+<h2>4. Network Architecture<a class="headerlink" href="#network-architecture" title="Link to this heading"></a></h2>
+<p>The network architecture forms a critical foundation for the Ceph
+storage subsystem within this OpenStack deployment. As a distributed
+storage platform, Ceph generates substantial client and internal traffic
+that must be supported with high bandwidth, low latency, redundancy, and
+strict isolation. This section details the network design specifically
+optimized for the Ceph cluster operating across four nodes in the
+eight-node environment.</p>
+<section id="ceph-network-design-principles">
+<h3>4.1 Ceph Network Design Principles<a class="headerlink" href="#ceph-network-design-principles" title="Link to this heading"></a></h3>
+<p>The network design follows established best practices for Ceph
+deployments:</p>
+<ul>
+<li><p>Complete separation of client-facing traffic from internal replication</p>
+<blockquote>
+<div><p>traffic.</p>
+</div></blockquote>
+</li>
+<li><p>High throughput and low latency paths to support production workloads.</p></li>
+<li><p>Full redundancy to eliminate single points of failure.</p></li>
+<li><p>Logical isolation using VLANs to enhance security and performance.</p></li>
+</ul>
+</section>
+<section id="complete-list-of-networks">
+<h3>4.2 Complete List of Networks<a class="headerlink" href="#complete-list-of-networks" title="Link to this heading"></a></h3>
+<p>The following 11 networks are defined for the environment:</p>
+<ul class="simple">
+<li><p>Out of Band Network (Not part of Cloud Network)</p></li>
+<li><p>Management Network (Not part of Cloud Network)</p></li>
+<li><p>Public API Network</p></li>
+<li><p>Private API Network</p></li>
+<li><p>Tunnel Network (Neutron)</p></li>
+<li><p>Self Service Network</p></li>
+<li><p>Storage Public Network</p></li>
+<li><p>Storage Cluster Network</p></li>
+<li><p>External Network</p></li>
+<li><p>Enterprise External Storage Network through iSCSI</p></li>
+<li><p>Enterprise External Storage Network through NAS</p></li>
+</ul>
+</section>
+<section id="primary-networks-for-ceph-storage">
+<h3>4.3 Primary Networks for Ceph Storage<a class="headerlink" href="#primary-networks-for-ceph-storage" title="Link to this heading"></a></h3>
+<p><strong>Storage Public Network</strong></p>
+<p>This network functions as the primary front-end interface for Ceph. It
+carries all client traffic from OpenStack services, including Cinder
+block volumes, Glance images, Nova ephemeral disks, and external access
+via iSCSI gateways. High bandwidth and low latency are essential on this
+network.</p>
+<p><strong>Storage Cluster Network</strong></p>
+<p>This dedicated back-end network is used exclusively for internal Ceph
+operations. It transports OSD-to-OSD replication, recovery, back-fill,
+and heartbeat traffic. During node or disk failure events, this network
+experiences the highest load and must be sized accordingly.</p>
+<p><strong>Enterprise External Storage Networks</strong></p>
+<ul>
+<li><p><strong>iSCSI Network</strong>: Dedicated segment for Ceph iSCSI gateway traffic,</p>
+<blockquote>
+<div><p>enabling block-level access for legacy enterprise systems.</p>
+</div></blockquote>
+</li>
+<li><p><strong>NAS Network</strong>: Dedicated segment for CephFS with NFS-Ganesha,</p>
+<blockquote>
+<div><p>providing file-level shared storage access.</p>
+</div></blockquote>
+</li>
+</ul>
+</section>
+<section id="technical-configuration-specifications">
+<h3>4.4 Technical Configuration Specifications<a class="headerlink" href="#technical-configuration-specifications" title="Link to this heading"></a></h3>
+<ul>
+<li><p><strong>VLAN Segregation</strong>: All networks utilize dedicated VLANs for logical</p>
+<blockquote>
+<div><p>separation, security, and traffic isolation.</p>
+</div></blockquote>
+</li>
+<li><p><strong>IP/Subnet Assignments</strong>: Unique subnets are allocated to each</p>
+<blockquote>
+<div><p>network. The detailed IP addressing plan will be finalized during
+the implementation phase.</p>
+</div></blockquote>
+</li>
+<li><p><strong>MTU Configuration</strong>: Jumbo frames with an MTU of 9000 are enabled on</p>
+<blockquote>
+<div><p>the Storage Public Network, Storage Cluster Network, iSCSI Network,
+and NAS Network to optimize throughput and reduce CPU overhead.</p>
+</div></blockquote>
+</li>
+<li><p><strong>Bonding for Redundancy</strong>: LACP (Link Aggregation Control Protocol)</p>
+<blockquote>
+<div><p>bonding is implemented on all critical storage interfaces to provide
+link-level redundancy and increased aggregate bandwidth.</p>
+</div></blockquote>
+</li>
+</ul>
+</section>
+<section id="network-topology-and-traffic-flows">
+<h3>4.5 Network Topology and Traffic Flows<a class="headerlink" href="#network-topology-and-traffic-flows" title="Link to this heading"></a></h3>
+<p>A comprehensive <strong>Network Topology Diagram</strong> will be included in this
+document. The diagram will illustrate:</p>
+<ul>
+<li><p>All 11 networks with corresponding VLANs.</p></li>
+<li><p>Connectivity for the four Ceph nodes.</p></li>
+<li><p>Major traffic flows, clearly distinguishing client I/O (Storage Public</p>
+<blockquote>
+<div><p>Network) from internal replication (Storage Cluster Network).</p>
+</div></blockquote>
+</li>
+<li><p>Bonding configurations and redundant paths.</p></li>
+</ul>
+</section>
+<section id="implementation-and-validation-considerations">
+<h3>4.6 Implementation and Validation Considerations<a class="headerlink" href="#implementation-and-validation-considerations" title="Link to this heading"></a></h3>
+<p>The network design ensures that the Ceph storage layer receives
+dedicated, high-performance connectivity. Prior to deployment, the
+following validation activities will be performed:</p>
+<ul class="simple">
+<li><p>Verification of switch capacity and buffering capabilities.</p></li>
+<li><p>Testing of bonded interface failover scenarios.</p></li>
+<li><p>Performance bench marking of storage networks under simulated load.</p></li>
+<li><p>Documentation of VLAN assignments, firewall rules, and IP schemes.</p></li>
+</ul>
+<p>This network architecture provides the necessary performance, isolation,
+and resilience required for a production-grade Ceph storage deployment
+in the OpenStack environment.</p>
+</section>
+</section>
+<section id="ceph-cluster-design">
+<h2>5. Ceph Cluster Design<a class="headerlink" href="#ceph-cluster-design" title="Link to this heading"></a></h2>
+<section id="design-overview">
+<h3>5.1 Design Overview<a class="headerlink" href="#design-overview" title="Link to this heading"></a></h3>
+<p>This section provides a comprehensive definition of the internal Ceph
+cluster architecture. It covers daemon placement, CRUSH map topology,
+pool structure, and baseline configuration parameters. The design is
+directly aligned with the confirmed 8-node OpenStack topology and
+utilizes exactly four Ceph-capable hosts - Node 1, Node 2, Node 3, and
+Node 4 - as the complete OSD estate. No additional storage nodes are
+assumed at this stage.</p>
+<p>The Ceph cluster is designed to deliver high availability, strong
+performance, and horizontal scalability while integrating seamlessly
+with the OpenStack services. All persistent and semi-persistent data for
+Cinder, Glance, Nova, and future object/file services will be stored and
+managed by this Ceph cluster.</p>
+</section>
+<section id="daemon-placement">
+<h3>5.2 Daemon Placement<a class="headerlink" href="#daemon-placement" title="Link to this heading"></a></h3>
+<p>The placement of Ceph daemons has been carefully planned to balance high
+availability, resource utilization, and operational simplicity.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Daemon</strong></p></th>
+<th class="head"><p><strong>Count</strong></p></th>
+<th class="head"><p><strong>Placement</strong></p></th>
+<th class="head"><p><strong>Rationale</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>MON</p></td>
+<td><p>3</p></td>
+<td><p>Node 1, Node 2, Node 3</p></td>
+<td><p>An odd number of monitors is required to maintain Paxos quorum. Three monitors allow the cluster to tolerate the failure of one monitor while maintaining quorum and normal cluster operations. Node 4 is intentionally excluded from MON duties to avoid placing quorum-critical services on the dedicated storage node.</p></td>
+</tr>
+<tr class="row-odd"><td><p>MGR</p></td>
+<td><p>2(Active/StandBy)</p></td>
+<td><p>Node 1 (Active), Node 2 (Standby)</p></td>
+<td><p>Two Manager daemons provide high availability for cluster management. The active Manager handles monitoring, dashboard, and orchestration tasks, while the standby Manager automatically takes over if the active instance fails.</p></td>
+</tr>
+<tr class="row-even"><td><p>OSD</p></td>
+<td><p>One per physical disk</p></td>
+<td><p>Node 1, Node 2, Node 3, Node 4</p></td>
+<td><p>One Object Storage Daemon (OSD) is deployed for each physical storage disk using the BlueStore storage backend. This configuration provides optimal performance, efficient storage utilization, and simplifies data recovery. The final number of OSD daemons depends on the storage disks allocated to each node.</p></td>
+</tr>
+<tr class="row-odd"><td><p>MDS</p></td>
+<td><p>As Required</p></td>
+<td><p>Decision Pending</p></td>
+<td><p>The Metadata Server (MDS) is required only when CephFS is deployed to provide a distributed file system. Since CephFS is optional for this deployment, the placement and number of MDS daemons will be finalized if shared file services are included in the project scope.</p></td>
+</tr>
+<tr class="row-even"><td><p>RGW</p></td>
+<td><p>As Required</p></td>
+<td><p>Decision Pending</p></td>
+<td><p>The RADOS Gateway (RGW) is required only if object storage services using S3 or Swift APIs are implemented. Deployment location and the number of RGW instances will be determined once object storage requirements are confirmed.</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Note</strong>: MON, MGR, and OSD placement are finalized and ready for
+implementation. MDS and RGW placement remain open items pending final
+confirmation of file and object storage requirements.</p>
+</section>
+<section id="crush-map">
+<h3>5.3 CRUSH Map<a class="headerlink" href="#crush-map" title="Link to this heading"></a></h3>
+<section id="failure-domain">
+<h4>5.3.1 Failure Domain<a class="headerlink" href="#failure-domain" title="Link to this heading"></a></h4>
+<p>The CRUSH map is configured with a <strong>host-level failure domain</strong>. With
+four OSD hosts available, the system ensures that each placement group’s
+three replicas are distributed across three different physical nodes.
+This configuration guarantees that the failure of any single host
+affects only one replica of any object, maintaining data availability.</p>
+</section>
+<section id="rack-awareness">
+<h4>5.3.2 Rack Awareness<a class="headerlink" href="#rack-awareness" title="Link to this heading"></a></h4>
+<p>Rack-level failure domain is not implemented in the current design.
+Introducing rack awareness with only four OSD hosts would not provide
+meaningful additional protection and could reduce placement flexibility.
+Rack awareness will be evaluated in future expansions when the cluster
+grows and spans multiple physical racks.</p>
+</section>
+<section id="custom-crush-rules">
+<h4>5.3.3 Custom CRUSH Rules<a class="headerlink" href="#custom-crush-rules" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Rule Name</strong></p></th>
+<th class="head"><p><strong>Purpose</strong></p></th>
+<th class="head"><p><strong>Applies To</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>replicated_hdd</strong></p></td>
+<td><p>Restricts object placement to the HDD device class, ensuring that data is stored only on HDD-based OSDs.</p></td>
+<td><p>Capacity-oriented and bulk storage pools when a mixed SSD/HDD storage architecture is deployed.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>replicated_ssd</strong></p></td>
+<td><p>Restricts object placement to the SSD device class to provide lower latency and higher I/O performance.</p></td>
+<td><p>High-performance storage pools, such as Cinder volumes, when SSD tiering is implemented.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>replicated_default</strong></p></td>
+<td><p>Uses the default CRUSH rule without restricting placement to a specific device class.</p></td>
+<td><p>Deployments where all OSDs use the same storage media (uniform disk configuration).</p></td>
+</tr>
+</tbody>
+</table>
+<p>The requirement for device-class-specific rules depends on the final
+decision regarding SSD, HDD, or mixed disk configuration across the Ceph
+nodes.</p>
+</section>
+</section>
+<section id="pool-design">
+<h3>5.4 Pool Design<a class="headerlink" href="#pool-design" title="Link to this heading"></a></h3>
+<p>The following pools will be created to support different OpenStack
+workloads:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Pool Name</strong></p></th>
+<th class="head"><p><strong>Consumer</strong></p></th>
+<th class="head"><p><strong>Purpose</strong></p></th>
+<th class="head"><p><strong>Replication</strong></p></th>
+<th class="head"><p><strong>PG Autoscale</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>volumes</p></td>
+<td><p>Cinder</p></td>
+<td><p>Stores persistent block volumes attached to virtual machines.</p></td>
+<td><p>3×</p></td>
+<td><p>Enabled</p></td>
+</tr>
+<tr class="row-odd"><td><p>images</p></td>
+<td><p>Glance</p></td>
+<td><p>Stores virtual machine boot images and templates used for instance provisioning.</p></td>
+<td><p>3×</p></td>
+<td><p>Enabled</p></td>
+</tr>
+<tr class="row-even"><td><p>vms</p></td>
+<td><p>Nova</p></td>
+<td><p>Stores ephemeral instance disks when Nova is configured to use Ceph RBD as the backend.</p></td>
+<td><p>3×</p></td>
+<td><p>Enabled</p></td>
+</tr>
+<tr class="row-odd"><td><p>backups</p></td>
+<td><p>Cinder Backup</p></td>
+<td><p>Stores volume backups and snapshots for recovery and data protection.</p></td>
+<td><p>3×</p></td>
+<td><p>Enabled</p></td>
+</tr>
+<tr class="row-even"><td><p>.rgw.root</p></td>
+<td><p>RGW</p></td>
+<td><p>Stores metadata and configuration information required by the RADOS Gateway service.</p></td>
+<td><p>3×</p></td>
+<td><p>Enabled</p></td>
+</tr>
+<tr class="row-odd"><td><p>.rgw.*</p></td>
+<td><p>RGW</p></td>
+<td><p>Stores S3- and Swift-compatible object data and related metadata for object storage services.</p></td>
+<td><p>3×</p></td>
+<td><p>Enabled</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>PG Management Strategy</strong>:</p>
+<p>Instead of manually calculating placement group counts,
+pg_autoscale_mode = on will be enabled for all pools. This modern Ceph
+feature automatically adjusts the number of placement groups based on
+cluster size and data volume, reducing the risk of misconfiguration and
+simplifying long-term management.</p>
+<p>This pool design provides a solid foundation that can be expanded as
+storage requirements grow.</p>
+</section>
+<section id="cephadm-deployment-orchestration-tool">
+<h3>5.5 <a class="reference external" href="https://docs.ceph.com/en/latest/cephadm/">Cephadm</a> — Deployment &amp; Orchestration Tool<a class="headerlink" href="#cephadm-deployment-orchestration-tool" title="Link to this heading"></a></h3>
+<p>Cephadm is Ceph’s own native cluster lifecycle management tool,
+introduced in the Octopus(15 .2.0) release as the recommended
+installation method for any Ceph cluster not running inside Kubernetes
+(Kubernetes environments use a separate tool, Rook, instead). It is
+built directly into Ceph itself rather than being an external
+configuration-management layer — meaning installation, scale-out,
+upgrades, and day-to-day service management are all first-class Ceph
+functionality, not a separate toolchain bolted on top.</p>
+<p>Cephadm can :</p>
+<ul class="simple">
+<li><p>add a Ceph container to the cluster.</p></li>
+<li><p>remove a Ceph container from the cluster.</p></li>
+<li><p>update Ceph containers.</p></li>
+</ul>
+<p>Instead, it deploys every Ceph daemon (MON, MGR, OSD, MDS, RGW,
+monitoring stack) as an isolated container, and manages the entire
+cluster lifecycle through two integrated components:</p>
+<ul>
+<li><p><strong>The cephadm shell</strong> — a containerized bash environment used for “Day</p>
+<blockquote>
+<div><p>One” tasks: initial installation and bootstrapping, and running ceph
+CLI commands.</p>
+</div></blockquote>
+</li>
+<li><p><strong>The cephadm orchestrator</strong> — a Manager (MGR) module that exposes an</p>
+<blockquote>
+<div><p>orchestration API (ceph orch …) used for “Day Two” operations:
+expanding the cluster, adding or removing daemons, and applying
+declarative service specifications.</p>
+</div></blockquote>
+</li>
+</ul>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ANALYSIS.html" class="btn btn-neutral float-left" title="Analysis" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="IMPLEMENTATION.html" class="btn btn-neutral float-right" title="Implementation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Anil and Babu.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
