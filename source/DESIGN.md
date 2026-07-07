@@ -156,6 +156,39 @@ architecture:
 All Ceph nodes require redundant, bonded high-speed interfaces on these
 storage networks to ensure performance and fault tolerance.
 
+### 3.6 Time Synchronization (Chrony)
+
+Accurate, synchronized time across all 8 nodes is a hard requirement for this
+design, not an optional hardening step. Ceph Monitor quorum depends on clock
+skew staying within Ceph's default tolerance (~50ms); OpenStack Keystone
+token validation, Galera cluster operation, and TLS certificate checks are
+all similarly time-sensitive. Log correlation across nodes during incident
+response also depends on synchronized clocks.
+
+**Design approach:**
+
+- **Chrony** (`chronyd`) is used as the NTP implementation on all 8 nodes,
+  replacing the older `ntpd` — it converges faster after boot and handles
+  intermittent network connectivity better, both relevant in a
+  private/on-prem cluster.
+- One or two Controller nodes (Node 1 and Node 2) are configured as internal
+  **stratum-2 time sources**, synchronizing from external upstream NTP
+  servers (e.g. `pool.ntp.org`, or an organization-internal time source if
+  available).
+- All remaining nodes (Node 3, Node 4, and Compute Nodes 5–8) point to these
+  internal sources rather than reaching out to the internet directly —
+  reducing external dependency and keeping time traffic on the internal
+  Management Network.
+- Firewall rules must permit **UDP port 123** between all nodes and their
+  configured time sources.
+
+**Validation:**
+
+- `chronyc tracking` and `chronyc sources` should be checked on each node
+  post-install to confirm synchronization and acceptable offset.
+- Clock skew should be added as a monitored metric (see section 9.3), since
+  Ceph will raise `HEALTH_WARN` automatically if skew exceeds tolerance.
+
 ## 4. Network Architecture
 
 The network architecture forms a critical foundation for the Ceph
