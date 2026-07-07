@@ -60,6 +60,8 @@ The following components should be monitored regularly:
 
 - Cluster capacity and disk usage
 
+- Chrony/NTP synchronization status and clock skew across all nodes
+
 ### 9.4 Logging
 
 Ceph generates detailed logs for each major service, allowing
@@ -157,6 +159,7 @@ hardware failures and operational issues.
 | **Storage Capacity Exhaustion**  | High       | Continuous capacity monitoring and timely expansion of OSDs or storage nodes.                                          |
 | **Hardware Resource Contention** | Medium     | Controller and Ceph services are sized appropriately, while compute workloads are isolated on dedicated compute nodes. |
 | **Human Error**                  | Medium     | Regular backups, RBD snapshots, change management procedures, and configuration documentation.                         |
+| **Clock Skew Between Nodes**     | Medium     | Chrony deployed on all nodes with internal stratum sources; monitored via Ceph health checks and `chronyc tracking`.   |
 
 ### 10.3 Operational Risks
 
