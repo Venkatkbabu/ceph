@@ -158,7 +158,7 @@ storage networks to ensure performance and fault tolerance.
 
 ### 3.6 Time Synchronization (Chrony)
 
-Accurate, synchronized time across all 8 nodes is a hard requirement for this
+Accurate, synchronized time across all nodes is a hard requirement for this
 design, not an optional hardening step. Ceph Monitor quorum depends on clock
 skew staying within Ceph's default tolerance (~50ms); OpenStack Keystone
 token validation, Galera cluster operation, and TLS certificate checks are
@@ -167,7 +167,7 @@ response also depends on synchronized clocks.
 
 **Design approach:**
 
-- **Chrony** (`chronyd`) is used as the NTP implementation on all 8 nodes,
+- **Chrony** (`chronyd`) is used as the NTP implementation on all nodes,
   replacing the older `ntpd` — it converges faster after boot and handles
   intermittent network connectivity better, both relevant in a
   private/on-prem cluster.
