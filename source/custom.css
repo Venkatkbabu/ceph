@@ -1,0 +1,23 @@
+/* Chapter-level navigation (Planning, Analysis, Design, etc.) */
+.wy-menu-vertical > ul > li > a,
+.wy-menu-vertical > ul > li.current > a {
+    color: #FFB300 !important;
+    font-weight: 600;
+}
+
+/* Numbered subsection navigation (1. Executive Summary, 2. Requirements, etc.) */
+.wy-menu-vertical li.toctree-l2 > a,
+.wy-menu-vertical li.toctree-l3 > a,
+.wy-menu-vertical li.toctree-l4 > a {
+    color: #64B5F6 !important;
+}
+
+/* Keep the currently active page's chapter name clearly highlighted */
+.wy-menu-vertical li.current > a {
+    color: #FFB300 !important;
+}
+
+/* Hover states for readability */
+.wy-menu-vertical a:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
