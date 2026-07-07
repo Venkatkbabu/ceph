@@ -34,5 +34,4 @@ html_theme_options = {
     'navigation_depth': 4,
 }
 html_static_path = ['_static']
-html_css_files = ['custom.css']
 html_logo = 'logo.png'
